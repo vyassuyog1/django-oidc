@@ -6,24 +6,18 @@ TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),
-    ('Andrea Biancini', 'andrea.biancini@garr.it'),
-    ('Marco Malavolti', 'marco.malavolti@garr.it'),
 )
 
 MANAGERS = ADMINS
 
 BASE_ROOT = ""
 
-BASE_DIR = os.path.dirname(os.path.realpath(__file__)) 
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',   # Add 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': 'django',                       # Or path to database file if using sqlite3.
-        'USER': 'django',                       # Not used with sqlite3.
-        'PASSWORD': 'ciaodjango',               # Not used with sqlite3.
-        'HOST': 'localhost',                    # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '3306',                         # Set to empty string for default. Not used with sqlite3.
+        'ENGINE': 'django.db.backends.sqlite3',  # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': os.path.join(BASE_DIR, r'db.sqlite'),  # Or path to database file if using sqlite3.
     }
 }
 
@@ -108,17 +102,15 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'oidc_django.middleware.OpenIdMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'djangomako.middleware.MakoMiddleware',
 )
 
-#SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
-#SESSION_SERIALIZER = 'django.contrib.sessions.serializers.PickleSerializer'
-#CACHES = {
-#    'default': {
-#        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-#    }
+# SESSION_SERIALIZER = 'django.contrib.sessions.serializers.PickleSerializer'
+# CACHES = {
+# 'default': {
+# 'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+# }
 #}
 
 AUTHENTICATION_BACKENDS = (
@@ -126,15 +118,12 @@ AUTHENTICATION_BACKENDS = (
     'oidc_django.backends.OpenIdUserBackend',
 )
 
-LOGIN_URL = '%s/openid' % BASE_ROOT
+LOGIN_URL = 'openid'
 
 ROOT_URLCONF = 'django_rp.urls'
 
 TEMPLATE_DIRS = (
-    os.path.join(BASE_DIR, "templates"),
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
+    os.path.join(BASE_DIR, "django_rp/templates"),
 )
 
 INSTALLED_APPS = (
@@ -148,6 +137,9 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     'django.contrib.admindocs',
+
+    'oidc_django',
+    'testapp',
 )
 
 # A sample logging configuration. The only tangible logging
@@ -192,25 +184,112 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': True,
         },
-        'oic.utils.webfinger': {
+        'oic': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
         },
-        'oic.utils.keyio': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'oic.oauth2.message': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
-	},
-        'oidc_django.oidc': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
-	},
     }
 }
+
+###############################################################################
+## PyOIDC specific settings
+
+PORT = 8000
+BASE = "http://localhost:%s/%s/marsu" % (PORT, BASE_ROOT) + "/"
+
+# If BASE is https these has to be specified (.cer)
+SERVER_KEY = ''
+SERVER_CERT = ''
+CA_BUNDLE = None
+VERIFY_SSL = False
+
+# information used when registering the client, this may be the same for all OPs
+ME = {
+    "application_type": "web",
+    "contacts": ["ops@example.com"],
+    "redirect_uris": ["%sauthz_cb" % BASE],
+    "post_logout_redirect_uris": ["%slogout" % BASE]
+}
+
+BEHAVIOUR = {
+    "response_type": "code",
+    "scope": ["openid", "profile", "email", "address", "phone"],
+}
+
+# The keys in this dictionary are the OPs (OpenID Providers) short user friendly name
+# not the issuer (iss) name.
+
+CLIENTS = {
+    # The ones that support webfinger, OP discovery and client registration
+    # This is the default, any client that is not listed here is expected to
+    # support dynamic discovery and registration.
+    "": {
+        "client_info": ME,
+        "behaviour": BEHAVIOUR
+    },
+    "azuread": {
+        "srv_discovery_url": "https://sts.windows.net/9019caa7-f3ba-4261-8b4f-9162bdbe8cd1/",
+        "behaviour": BEHAVIOUR,
+        "client_registration": {
+             "client_id": "0d21f6d8-796f-4879-a2e1-314ddfcfb737",
+             "client_secret": "6hzvhNTsHPvTiUH/GUHVsFDt8b0BajZNox/iFI7iVJ8=",
+             "redirect_uris": ["http://localhost:8000/openid/authz_cb/"],
+         }
+    },
+    # No webfinger support, but OP information lookup and client registration
+    # "xenosmilus": {
+    #     "srv_discovery_url": "https://xenosmilus2.umdc.umu.se:8091/",
+    #     "client_info": ME,
+    #     "behaviour": BEHAVIOUR
+    # },
+    # # Supports OP information lookup but not client registration
+    # "op.example.org": {
+    #     "srv_discovery_url": "https://example.org/op/discovery_endpoint",
+    #     "client_registration": {
+    #         "client_id": "abcdefgh",
+    #         "client_secret": "123456789",
+    #         "redirect_uris": ["https://rp.example.com/authn_cb"],
+    #     }
+    # },
+    # # Does not support OP information lookup but dynamic client registration
+    # "noop.example.com": {
+    #     "provider_info": {
+    #         "issuer": "",
+    #         "authorization_endpoint": "",
+    #         "token_endpoint": "",
+    #         "userinfo_endpoint": "",
+    #         "registration_endpoint": "",
+    #         "jwks_uri": "",
+    #         "scopes_supported": "",
+    #         "response_types_supported": "",
+    #         "subject_types_supported": "",
+    #         "id_token_signing_alg_values_supported": "",
+    #         "claims_supported": "",
+    #     },
+    #     "client_info": ME,
+    # },
+    # # Does not support any dynamic functionality
+    # "nodyn.example.com": {
+    #     "provider_info": {
+    #         "issuer": "",
+    #         "authorization_endpoint": "",
+    #         "token_endpoint": "",
+    #         "userinfo_endpoint": "",
+    #         "registration_endpoint": "",
+    #         "jwks_uri": "",
+    #         "scopes_supported": "",
+    #         "response_types_supported": "",
+    #         "subject_types_supported": "",
+    #         "id_token_signing_alg_values_supported": "",
+    #         "claims_supported": "",
+    #     },
+    #     "client_registration": {
+    #         "client_id": "abcdefg",
+    #         "client_secret": "123456789",
+    #         "redirect_uris": ["https://rp.example.com/authn_cb"],
+    #     }
+    # },
+}
+##
+###############################################################################

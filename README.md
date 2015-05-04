@@ -1,6 +1,8 @@
 Django pyoidc integration
 =========================
 
+Note: fork in progress - goal is to make it easily reusable.
+
 Django module that includes pyoidc relying party code into a Django application.
 To install this example:
  * Install an OpenID Provider with YAIS:

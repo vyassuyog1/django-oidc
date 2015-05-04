@@ -5,14 +5,13 @@ from django.utils.functional import SimpleLazyObject
 
 from django.shortcuts import render
 from mako.lookup import TemplateLookup
-from djangomako.shortcuts import render_to_response
 from django.http import HttpResponse
 from urlparse import parse_qs
 from jwkest.jws import alg2keytype
 from oic.utils.http_util import Redirect
 from backends import OpenIdUserBackend
 
-from oidc_django import oidc, conf
+from oidc_django import oidc
 
 import urllib
 import threading

@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.contrib.auth.backends import ModelBackend
 
+
 class OpenIdUserBackend(ModelBackend):
     """
     This backend is to be used in conjunction with the ``OpenIdUserMiddleware``
@@ -28,22 +29,27 @@ class OpenIdUserBackend(ModelBackend):
         Returns None if ``create_unknown_user`` is ``False`` and a ``User``
         object with the given username is not found in the database.
         """
-        if not userinfo: return
+        if not userinfo or not userinfo.has_key('sub'): return
         user = None
+
         username = self.clean_username(userinfo['sub'])
 
         UserModel = get_user_model()
+
+        # Some OP may actually choose to withhold some information, so we must test if it is present
+        openid_data = {UserModel.USERNAME_FIELD: username}
+        if userinfo.has_key('first_name'):
+            openid_data['first_name'] = userinfo['first_name']
+        if userinfo.has_key('family_name'):
+            openid_data['last_name'] = userinfo['family_name']
+        if userinfo.has_key('email'):
+            openid_data['email'] = userinfo['email']
 
         # Note that this could be accomplished in one try-except clause, but
         # instead we use get_or_create when creating unknown users since it has
         # built-in safeguards for multiple threads.
         if self.create_unknown_user:
-            user, created = UserModel.objects.get_or_create(**{
-                UserModel.USERNAME_FIELD: username,
-		'first_name': userinfo['given_name'],
-		'last_name': userinfo['family_name'],
-		'email': userinfo['email']
-            })
+            user, created = UserModel.objects.get_or_create(**openid_data)
             if created:
                 user = self.configure_user(user)
         else:

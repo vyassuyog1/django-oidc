@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+    <head lang="en">
+        <meta charset="UTF-8">
+        <title>Step 1 : choose your OpenID provider</title>
+    </head>
+    <body>
+        <div>
+            {% for op_name in op_list %}
+                <a href="{% url 'redirect_to_op_name' op_name=op_name %}">{{op_name}}</a>
+            {% endfor %}
+        </div>
+    </body>
+</html>

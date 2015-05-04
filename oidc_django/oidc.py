@@ -27,7 +27,7 @@ class Client(oic.Client):
         if behaviour:
             self.behaviour = behaviour
 
-    def create_authn_request(self, session, acr_value=None):
+    def create_authn_request(self, session, acr_value=None, **kwargs):
         session["state"] = rndstr()
         session["nonce"] = rndstr()
         request_args = {
@@ -41,6 +41,7 @@ class Client(oic.Client):
         if acr_value is not None:
             request_args["acr_values"] = acr_value
 
+        request_args.update(kwargs)
         cis = self.construct_AuthorizationRequest(request_args=request_args)
         logger.debug("request: %s" % cis)
 
@@ -58,7 +59,7 @@ class Client(oic.Client):
         logger.debug("resp_headers: %s" % resp.headers)
         return resp
 
-    def callback(self, response):
+    def callback(self, response, session):
         """
         This is the method that should be called when an AuthN response has been
         received from the OP.
@@ -70,9 +71,17 @@ class Client(oic.Client):
                                        sformat="dict", keyjar=self.keyjar)
 
         if isinstance(authresp, ErrorResponse):
-            return OIDCError("Access denied")
+            if authresp["error"] == "login_required":
+                return self.create_authn_request(session)
+            else:
+                return OIDCError("Access denied")
+
+        if session["state"] != authresp["state"]:
+            return OIDCError("Received state not the same as expected.")
 
         try:
+            if authresp["id_token"] != session["nonce"]:
+                return OIDCError("Received nonce not the same as expected.")
             self.id_token[authresp["state"]] = authresp["id_token"]
         except KeyError:
             pass
@@ -90,7 +99,7 @@ class Client(oic.Client):
 
                 atresp = self.do_access_token_request(
                     scope="openid", state=authresp["state"], request_args=args,
-                    authn_method="client_secret_post")
+                    authn_method=self.registration_response["token_endpoint_auth_method"])
             except Exception as err:
                 logger.error("%s" % err)
                 raise
@@ -98,7 +107,7 @@ class Client(oic.Client):
             if isinstance(atresp, ErrorResponse):
                 raise OIDCError("Invalid response %s." % atresp["error"])
 
-        inforesp = self.do_user_info_request(state=authresp["state"])
+        inforesp = self.do_user_info_request(state=authresp["state"], method = "GET")
 
         if isinstance(inforesp, ErrorResponse):
             raise OIDCError("Invalid response %s." % inforesp["error"])
@@ -161,7 +170,7 @@ class OIDCClients(object):
             else:
                 _key_set.discard(param)
 
-        if _key_set == {"client_info"}:  # Everything dynamic
+        if _key_set == set(["client_info"]):  # Everything dynamic
             # There has to be a userid
             if not userid:
                 raise MissingAttribute("Missing userid specification")
@@ -173,26 +182,26 @@ class OIDCClients(object):
             # register the client
             _ = client.register(client.provider_info["registration_endpoint"],
                                 **kwargs["client_info"])
-        elif _key_set == {"client_info", "srv_discovery_url"}:
+        elif _key_set == set(["client_info", "srv_discovery_url"]):
             # Ship the webfinger part
             # Gather OP information
             _ = client.provider_config(kwargs["srv_discovery_url"])
             # register the client
             _ = client.register(client.provider_info["registration_endpoint"],
                                 **kwargs["client_info"])
-        elif _key_set == {"provider_info", "client_info"}:
+        elif _key_set == set(["provider_info", "client_info"]):
             client.handle_provider_config(
                 ProviderConfigurationResponse(**kwargs["provider_info"]),
                 kwargs["provider_info"]["issuer"])
             _ = client.register(client.provider_info["registration_endpoint"],
                                 **kwargs["client_info"])
-        elif _key_set == {"provider_info", "client_registration"}:
+        elif _key_set == set(["provider_info", "client_registration"]):
             client.handle_provider_config(
                 ProviderConfigurationResponse(**kwargs["provider_info"]),
                 kwargs["provider_info"]["issuer"])
             client.store_registration_info(RegistrationResponse(
-                    **kwargs["client_registration"]))
-        elif _key_set == {"srv_discovery_url", "client_registration"}:
+                **kwargs["client_registration"]))
+        elif _key_set == set(["srv_discovery_url", "client_registration"]):
             _ = client.provider_config(kwargs["srv_discovery_url"])
             client.store_registration_info(RegistrationResponse(
                 **kwargs["client_registration"]))
@@ -202,7 +211,9 @@ class OIDCClients(object):
         return client
 
     def dynamic_client(self, userid):
-        client = self.client_cls(client_authn_method=CLIENT_AUTHN_METHOD, verify_ssl=self.config.VERIFY_SSL)
+        client = self.client_cls(client_authn_method=CLIENT_AUTHN_METHOD,
+                                 verify_ssl=self.config.VERIFY_SSL)
+
         issuer = client.wf.discovery_query(userid)
         if issuer in self.client:
             return self.client[issuer]
@@ -233,3 +244,4 @@ class OIDCClients(object):
 
     def keys(self):
         return self.client.keys()
+
