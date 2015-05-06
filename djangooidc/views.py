@@ -1,12 +1,16 @@
+import logging
 from urlparse import parse_qs
 
 from django.conf import settings
 from django.contrib.auth import logout as auth_logout
 from django.shortcuts import redirect, render_to_response, resolve_url
 from django.http import HttpResponse
+from django import forms
+from django.template import RequestContext
 
 from djangooidc.oidc import OIDCClients
 
+logger = logging.getLogger(__name__)
 
 CLIENTS = OIDCClients(settings)
 
@@ -17,19 +21,38 @@ def start_response(status, headers):
 
 
 # Step 1: provider choice
+class DynamicProvider(forms.Form):
+    hint = forms.CharField(required=True, label='login', max_length=250)
+
+
 def openid(request):
     request.session["next"] = request.GET["next"] if "next" in request.GET.keys() else "/"
-    return render_to_response("oidc_django/opchoice.html", {"op_list": [i for i in settings.CLIENTS.keys() if i]})
+    try:
+        dyn = settings.ALLOW_DYNAMIC_OP or False
+    except:
+        dyn = True
+    return render_to_response("djangooidc/opchoice.html",
+                              {"op_list": [i for i in settings.CLIENTS.keys() if i], 'dynamic': dyn,
+                               'form': DynamicProvider()}, context_instance=RequestContext(request))
 
 
 # Step 2: redirect user to step 3 (the OP)
-def rp(request, discovery_str=None, op_name=None):
-    if discovery_str is not None:
-        client = CLIENTS.dynamic_client(discovery_str)
-        request.session["op"] = client.provider_info["issuer"]
-    else:
+def rp(request, op_name=None):
+    # OP can be from two sources: settings or dynamically registered.
+    if op_name is not None:
         client = CLIENTS[op_name]
         request.session["op"] = op_name
+    elif request.method == "POST":
+        form = DynamicProvider(request.POST)
+        if form.is_valid():
+            try:
+                client = CLIENTS.dynamic_client(form.cleaned_data["hint"])
+                request.session["op"] = client.provider_info["issuer"]
+            except Exception, e:
+                logger.exception("could not create OOID client")
+                return render_to_response("djangooidc/error.html", {"error": e})
+        else:
+            return redirect('openid')
 
     try:
         oic_resp = client.create_authn_request(request.session)
@@ -47,11 +70,14 @@ def rp(request, discovery_str=None, op_name=None):
 def authz_cb(request):
     client = CLIENTS[request.session["op"]]
 
-    query = parse_qs(request.META['QUERY_STRING'])
-    userinfo = client.callback(query, request.session)
-    request.session["userinfo"] = userinfo
+    try:
+        query = parse_qs(request.META['QUERY_STRING'])
+        userinfo = client.callback(query, request.session)
+        request.session["userinfo"] = userinfo
 
-    return redirect(request.session["next"])
+        return redirect(request.session["next"])
+    except Exception, e:
+        return render_to_response("djangooidc/error.html", {"error": e, "callback": query})
 
 
 def logout(request, next_page=None):

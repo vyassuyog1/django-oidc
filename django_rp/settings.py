@@ -159,14 +159,6 @@ LOGGING = {
         },
     },
     'handlers': {
-        'null': {
-            'level': 'DEBUG',
-            'class': 'logging.NullHandler',
-        },
-        'mail_admins': {
-            'level': 'ERROR',
-            'class': 'django.utils.log.AdminEmailHandler'
-        },
         'console': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
@@ -175,18 +167,18 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['null'],
+            'handlers': ['console'],
             'propagate': True,
             'level': 'INFO',
-        },
-        'django.request': {
-            'handlers': ['mail_admins'],
-            'level': 'ERROR',
-            'propagate': True,
         },
         'oic': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'djangooidc': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
             'propagate': True,
         },
     }
@@ -202,7 +194,7 @@ BASE = "http://localhost:%s/%s/marsu" % (PORT, BASE_ROOT) + "/"
 SERVER_KEY = ''
 SERVER_CERT = ''
 CA_BUNDLE = None
-VERIFY_SSL = False
+VERIFY_SSL = True
 
 # information used when registering the client, this may be the same for all OPs
 ME = {

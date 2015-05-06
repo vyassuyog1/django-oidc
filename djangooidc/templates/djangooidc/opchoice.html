@@ -1,0 +1,19 @@
+{% extends "djangooidc/base.html" %}
+{% block title %}Step 1 : choose your OpenID provider{% endblock %}
+{% block content %}
+    <div>
+        <div>You may log in with one of the following providers:</div>
+        {% for op_name in op_list %}
+            <a href="{% url 'redirect_to_op_name' op_name=op_name %}">{{ op_name }}</a>
+        {% endfor %}
+        {% if dynamic %}
+            <div>Alternatively, you may login in with a provider of you choice. Please enter your full login below:
+            </div>
+            <form action="{% url 'redirect_to_op_discovery' %}" method="post">
+                {% csrf_token %}
+                {{ form }}
+                <input type="submit">
+            </form>
+        {% endif %}
+    </div>
+{% endblock %}
