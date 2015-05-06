@@ -1,20 +1,15 @@
 from urlparse import parse_qs
-import urllib
 
 from django.conf import settings
-
-from django.shortcuts import redirect, render_to_response
+from django.contrib.auth import logout as auth_logout
+from django.shortcuts import redirect, render_to_response, resolve_url
 from django.http import HttpResponse
-from jwkest.jws import alg2keytype
-from oic.utils.http_util import Redirect
 
 from djangooidc.oidc import OIDCClients
 
 
 CLIENTS = OIDCClients(settings)
 
-# debug
-# JWE.is_jwe = JWEnc.is_jwe
 
 def start_response(status, headers):
     # Empty method
@@ -59,43 +54,34 @@ def authz_cb(request):
     return redirect(request.session["next"])
 
 
-def logout(request):
+def logout(request, next_page=None):
     client = CLIENTS[request.session["op"]]
 
-    logout_url = client.endsession_endpoint
+    # User is by default NOT redirected to the app - it stays on an OP page after logout.
+    # Here we try to determine if a redirection to the app was asked for and is possible.
+    extra_args = {}
     try:
-        # Specify to which URL the OP should return the user after
-        # log out. That URL must be registered with the OP at client
-        # registration.
-        logout_url += "?" + urllib.urlencode({
-            "post_logout_redirect_uri": client.registration_response["post_logout_redirect_uris"][0]
-        })
+        if next_page is not None:
+            # Specific redirection required by user - will only work if registered with the OP
+            next_page = resolve_url(next_page)
+            urls = [i for i in client.registration_response["post_logout_redirect_uris"] if next_page in i]
+            if len(urls) > 0:
+                extra_args["post_logout_redirect_uri"] = urls[0]
+        else:
+            # Just take the first registered URL if no URL is specifically asked for
+            extra_args["post_logout_redirect_uri"] = client.registration_response["post_logout_redirect_uris"][0]
     except KeyError:
+        # No post_logout_redirect_uris - no redirection to the application is possible anyway
         pass
-    else:
-        # If there is an ID token send it along as a id_token_hint
-        _idtoken = get_id_token(client, request.session)
-        if _idtoken:
-            logout_url += "&" + urllib.urlencode({
-                "id_token_hint": id_token_as_signed_jwt(client, _idtoken, "HS256")
-            })
 
-    request.session.clear()
-    oic_resp = Redirect(str(logout_url))
-    oic_resp(request.environ, start_response)
-    resp = HttpResponse(content_type=oic_resp._content_type, status=oic_resp._status)
-    for key, val in oic_resp.headers:
-        resp[key] = val
-    return resp
-
-
-def get_id_token(client, session):
-    return client.grant[session["state"]].get_id_token()
-
-
-# Produce a JWS, a signed JWT, containing a previously received ID token
-def id_token_as_signed_jwt(client, id_token, alg="RS256"):
-    ckey = client.keyjar.get_signing_key(alg2keytype(alg), "")
-    _signed_jwt = id_token.to_jwt(key=ckey, algorithm=alg)
-    return _signed_jwt
-
+    # Redirect client to the OP logout page
+    try:
+        res = client.do_end_session_request(state=request.session["state"],
+                                            extra_args=extra_args)
+        resp = HttpResponse(content_type=res.headers["content-type"], status=res.status_code, content=res._content)
+        for key, val in res.headers.items():
+            resp[key] = val
+        return resp
+    finally:
+        # Always remove Django session stuff
+        auth_logout(request)

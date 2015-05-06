@@ -6,3 +6,6 @@ from django.shortcuts import render_to_response
 def home(request):
     # Old: opresult.mako
     return render_to_response("testapp/result.html", {"userinfo": request.session['userinfo']})
+
+def unprotected(request):
+    return render_to_response("testapp/unprotected.html")

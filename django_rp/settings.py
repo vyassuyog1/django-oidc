@@ -235,6 +235,7 @@ CLIENTS = {
              "client_id": "0d21f6d8-796f-4879-a2e1-314ddfcfb737",
              "client_secret": "6hzvhNTsHPvTiUH/GUHVsFDt8b0BajZNox/iFI7iVJ8=",
              "redirect_uris": ["http://localhost:8000/openid/authz_cb/"],
+             "post_logout_redirect_uris": ["http://localhost:8000/unprotected"],
          }
     },
     # No webfinger support, but OP information lookup and client registration
