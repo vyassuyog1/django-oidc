@@ -100,7 +100,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'oidc_django.middleware.OpenIdMiddleware',
+    'djangooidc.middleware.OpenIdMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
 )
 
@@ -115,7 +115,7 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'oidc_django.backends.OpenIdUserBackend',
+    'djangooidc.backends.OpenIdUserBackend',
 )
 
 LOGIN_URL = 'openid'
@@ -138,7 +138,7 @@ INSTALLED_APPS = (
     # Uncomment the next line to enable admin documentation:
     'django.contrib.admindocs',
 
-    'oidc_django',
+    'djangooidc',
     'testapp',
 )
 

@@ -11,7 +11,7 @@ from jwkest.jws import alg2keytype
 from oic.utils.http_util import Redirect
 from backends import OpenIdUserBackend
 
-from oidc_django import oidc
+from djangooidc import oidc
 
 import urllib
 import threading

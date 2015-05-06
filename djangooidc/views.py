@@ -8,7 +8,7 @@ from django.http import HttpResponse
 from jwkest.jws import alg2keytype
 from oic.utils.http_util import Redirect
 
-from oidc_django.oidc import OIDCClients
+from djangooidc.oidc import OIDCClients
 
 
 CLIENTS = OIDCClients(settings)
@@ -24,10 +24,6 @@ def start_response(status, headers):
 # Step 1: provider choice
 def openid(request):
     request.session["next"] = request.GET["next"] if "next" in request.GET.keys() else "/"
-    print settings.CLIENTS.keys()
-    print settings.CLIENTS['azuread']
-    print CLIENTS['azuread']
-    # print OIDCClients(settings).dynamic_client("test@login.microsoftonline.com/marsu.onmicrosoft.com")
     return render_to_response("oidc_django/opchoice.html", {"op_list": [i for i in settings.CLIENTS.keys() if i]})
 
 

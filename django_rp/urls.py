@@ -9,7 +9,7 @@ BASEDIR = path.dirname(path.abspath(__file__))
 
 urlpatterns = patterns('',
                        # URLS for OpenId authentication
-                       url(r'openid/', include('oidc_django.urls')),
+                       url(r'openid/', include('djangooidc.urls')),
 
                        # Test URLs
                        url(r'^$', 'testapp.views.home', name='home'),
