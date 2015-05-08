@@ -158,8 +158,13 @@ class OIDCClients(object):
             else:
                 _key_set.discard(param)
 
+        try:
+            verify_ssl = self.config.OIDC_VERIFY_SSL
+        except:
+            verify_ssl = True
+
         client = self.client_cls(client_authn_method=CLIENT_AUTHN_METHOD,
-                                 behaviour=kwargs["behaviour"], verify_ssl=self.config.VERIFY_SSL, **args)
+                                 behaviour=kwargs["behaviour"], verify_ssl=verify_ssl, **args)
 
         # The behaviour parameter is not significant for the election process
         _key_set.discard("behaviour")

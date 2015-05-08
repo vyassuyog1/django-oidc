@@ -5,12 +5,7 @@ Django OpenID Connect (OIDC) authentication provider
 
 This module makes it easy to integrate OpenID Connect as an authentication source in a Django project.
 
-Behind the scene, it uses Roland Hedberg's pyoidc library.
-
-Documentation
--------------
-
-The full documentation is at https://django-oidc.readthedocs.org.
+Behind the scenes, it uses Roland Hedberg's pyoidc library.
 
 Quickstart
 ----------
@@ -26,8 +21,7 @@ Install djangooidc::
 
 Then to use it in a project, add this to your settings.py:
 
-* add `'djangooidc.middleware.OpenIdMiddleware'` to MIDDLEWARE_CLASSES
-* add `'djangooidc.backends.OpenIdUserBackend'` to AUTHENTICATION_BACKENDS
+* add `'djangooidc.backends.OpenIdConnectBackend'` to AUTHENTICATION_BACKENDS
   (note: the default `'django.contrib.auth.backends.ModelBackend'` must be present **before** the oidc backend)
 * set LOGIN_URL = 'openid'
 * add the specific OIDC parameters (change the absolute URLs to yours)::
@@ -35,10 +29,10 @@ Then to use it in a project, add this to your settings.py:
     ##################################
     # OIDC
 
-    # If we should check certificates
-    VERIFY_SSL = True
+    # If we should check certificates (True by default)
+    # OIDC_VERIFY_SSL = False
 
-    # The view for OIDC login uses a default template - it can be overridden here
+    # The view for OIDC login uses a default template which can be overridden here
     # OIDC_LOGIN_TEMPLATE = "fed_login.html"
 
     # You may want to disable client registration. In that case, only the OP inside OIDC_CLIENTS will be available.
@@ -89,10 +83,12 @@ Then add this to urls.py::
     url(r'openid/', include('djangooidc.urls')),
 
 
-You may now test the authentication by going to (on the development server) http://localhost:8000/openid/login
+You may now test the authentication by going to (on the development server) http://localhost:8000/openid/login or to any
+of your views that requires authentication.
 
 
 Features
 --------
 
 * Simple ready to use Django authentication provider
+* No models stored in database - just some configuration in settings.py

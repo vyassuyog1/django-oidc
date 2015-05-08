@@ -100,7 +100,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'djangooidc.middleware.OpenIdMiddleware',
+#    'djangooidc.middleware.OpenIdMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
 )
 
@@ -115,7 +115,7 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'djangooidc.backends.OpenIdUserBackend',
+    'djangooidc.backends.OpenIdConnectBackend',
 )
 
 LOGIN_URL = 'openid'
@@ -187,11 +187,12 @@ LOGGING = {
 ###############################################################################
 # PyOIDC specific settings
 
-# If the site is served  with HTTPS these have to be specified
-SERVER_KEY = ''
-SERVER_CERT = ''
-CA_BUNDLE = None
-VERIFY_SSL = True
+# Check certificates? True by default.
+# OIDC_VERIFY_SSL = True
+
+# By default an internal user will be created for each new user that has successfully authenticate with OIDC.
+# This can be disabled by setting this variable to False - in that case users must be manually referenced.
+# OIDC_CREATE_UNKNOWN_USER = False
 
 # The view for OIDC login uses a default template - it can be overridden here
 # OIDC_LOGIN_TEMPLATE = "djangooidc/login.html"

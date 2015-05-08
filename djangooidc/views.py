@@ -2,15 +2,15 @@ import logging
 from urlparse import parse_qs
 
 from django.conf import settings
-from django.contrib.auth import logout as auth_logout
+from django.contrib.auth import logout as auth_logout, authenticate, login
 from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth.views import login, logout as auth_logout_view
+from django.contrib.auth.views import login as auth_login_view, logout as auth_logout_view
 from django.shortcuts import redirect, render_to_response, resolve_url
 from django.http import HttpResponse
 from django import forms
 from django.template import RequestContext
 
-from djangooidc.oidc import OIDCClients
+from djangooidc.oidc import OIDCClients, OIDCError
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ def openid(request, op_name=None):
     # Internal login?
     if request.method == 'POST' and "internal_login" in request.POST:
         ilform = AuthenticationForm(request.POST)
-        return login(request)
+        return auth_login_view(request)
     else:
         ilform = AuthenticationForm()
 
@@ -82,9 +82,13 @@ def authz_cb(request):
         query = parse_qs(request.META['QUERY_STRING'])
         userinfo = client.callback(query, request.session)
         request.session["userinfo"] = userinfo
-
-        return redirect(request.session["next"])
-    except Exception, e:
+        user = authenticate(**userinfo)
+        if user:
+            login(request, user)
+            return redirect(request.session["next"])
+        else:
+            raise Exception('this login is not valid in this application')
+    except OIDCError as e:
         return render_to_response("djangooidc/error.html", {"error": e, "callback": query})
 
 
