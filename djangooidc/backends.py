@@ -6,44 +6,37 @@ from django.contrib.auth.backends import ModelBackend
 
 class OpenIdConnectBackend(ModelBackend):
     """
-    This backend is to be used in conjunction with the ``OpenIdUserMiddleware``
-    found in the middleware module of this package, and is used when the server
-    is handling authentication outside of Django.
+    This backend checks a previously performed OIDC authentication.
+    If it is OK and the user already exists in the database, it is returned.
+    If it is OK and user does not exist in the database, it is created and returned unless setting
+        OIDC_CREATE_UNKNOWN_USER is False.
+    In all other cases, None is returned.
     """
 
-    def authenticate(self, **userinfo):
-        """
-        To authenticate engage the OpenId Connect login procedure.
-        The username returned by this process is considered trusted.  This
-        method simply returns the ``User`` object with the given username,
-        creating a new ``User`` object if ``create_unknown_user`` is ``True``.
-
-        Returns None if ``create_unknown_user`` is ``False`` and a ``User``
-        object with the given username is not found in the database.
-        """
-        print 'RRRRRRRRRRRRRRRRRRRR'
-        print userinfo
-        if not userinfo or 'sub' not in userinfo.keys():
-            print 'YYYYYYYYYYY'
-            return
+    def authenticate(self, **kwargs):
         user = None
+        if not kwargs or 'sub' not in kwargs.keys():
+            return user
 
         UserModel = get_user_model()
-
-        username = self.clean_username(userinfo['sub'])
-        if 'upn' in userinfo.keys():
-            username = userinfo['upn']
+        username = self.clean_username(kwargs['sub'])
+        if 'upn' in kwargs.keys():
+            username = kwargs['upn']
 
         # Some OP may actually choose to withhold some information, so we must test if it is present
         openid_data = {UserModel.USERNAME_FIELD: username}
-        if 'first_name' in userinfo.keys():
-            openid_data['first_name'] = userinfo['first_name']
-        if 'family_name' in userinfo.keys():
-            openid_data['last_name'] = userinfo['family_name']
-        if 'given_name' in userinfo.keys():
-            openid_data['last_name'] = userinfo['given_name']
-        if 'email' in userinfo.keys():
-            openid_data['email'] = userinfo['email']
+        if 'first_name' in kwargs.keys():
+            openid_data['first_name'] = kwargs['first_name']
+        if 'given_name' in kwargs.keys():
+            openid_data['first_name'] = kwargs['given_name']
+        if 'christian_name' in kwargs.keys():
+            openid_data['first_name'] = kwargs['christian_name']
+        if 'family_name' in kwargs.keys():
+            openid_data['last_name'] = kwargs['family_name']
+        if 'last_name' in kwargs.keys():
+            openid_data['last_name'] = kwargs['last_name']
+        if 'email' in kwargs.keys():
+            openid_data['email'] = kwargs['email']
 
         # Note that this could be accomplished in one try-except clause, but
         # instead we use get_or_create when creating unknown users since it has
