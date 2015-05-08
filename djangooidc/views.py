@@ -15,34 +15,25 @@ logger = logging.getLogger(__name__)
 CLIENTS = OIDCClients(settings)
 
 
-def start_response(status, headers):
-    # Empty method
-    return
-
-
-# Step 1: provider choice
+# Step 1: provider choice (form). Also - Step 2: redirect to OP. (Step 3 is OP business.)
 class DynamicProvider(forms.Form):
     hint = forms.CharField(required=True, label='login', max_length=250)
 
 
-def openid(request):
+def openid(request, op_name=None):
+    client = None
     request.session["next"] = request.GET["next"] if "next" in request.GET.keys() else "/"
     try:
         dyn = settings.ALLOW_DYNAMIC_OP or False
     except:
         dyn = True
-    return render_to_response("djangooidc/opchoice.html",
-                              {"op_list": [i for i in settings.CLIENTS.keys() if i], 'dynamic': dyn,
-                               'form': DynamicProvider()}, context_instance=RequestContext(request))
 
-
-# Step 2: redirect user to step 3 (the OP)
-def rp(request, op_name=None):
-    # OP can be from two sources: settings or dynamically registered.
-    if op_name is not None:
+    # Try to find an OP client either from the form or from the op_name URL argument
+    if request.method == 'GET' and op_name is not None:
         client = CLIENTS[op_name]
         request.session["op"] = op_name
-    elif request.method == "POST":
+
+    if request.method == 'POST' and dyn:
         form = DynamicProvider(request.POST)
         if form.is_valid():
             try:
@@ -51,24 +42,26 @@ def rp(request, op_name=None):
             except Exception, e:
                 logger.exception("could not create OOID client")
                 return render_to_response("djangooidc/error.html", {"error": e})
-        else:
-            return redirect('openid')
-
-    try:
-        oic_resp = client.create_authn_request(request.session)
-    except Exception:
-        raise
     else:
-        oic_resp(request.environ, start_response)
-        resp = HttpResponse(content_type=oic_resp._content_type, status=oic_resp._status)
-        for key, val in oic_resp.headers:
-            resp[key] = val
-        return resp
+        form = DynamicProvider()
+
+    # If we were able to determine the OP client, just redirect to it with an authentication request
+    if client:
+        try:
+            return client.create_authn_request(request.session)
+        except Exception, e:
+            return render_to_response("djangooidc/error.html", {"error": e})
+
+    # Otherwise just render the list+form.
+    return render_to_response("djangooidc/opchoice.html",
+                              {"op_list": [i for i in settings.CLIENTS.keys() if i], 'dynamic': dyn,
+                               'form': form}, context_instance=RequestContext(request))
 
 
 # Step 4: analyze the token returned by the OP
 def authz_cb(request):
     client = CLIENTS[request.session["op"]]
+    query = None
 
     try:
         query = parse_qs(request.META['QUERY_STRING'])

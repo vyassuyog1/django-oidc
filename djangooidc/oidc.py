@@ -10,6 +10,7 @@ from oic.utils.authn.client import CLIENT_AUTHN_METHOD
 __author__ = 'roland'
 
 import logging
+from django.http import HttpResponseRedirect
 
 logger = logging.getLogger(__name__)
 
@@ -53,10 +54,11 @@ class Client(oic.Client):
         logger.info("URL: %s" % url)
         logger.debug("ht_args: %s" % ht_args)
 
-        resp = Redirect(str(url))
+        resp = HttpResponseRedirect(url)
         if ht_args:
-            resp.headers.extend([(a, b) for a, b in ht_args.items()])
-        logger.debug("resp_headers: %s" % resp.headers)
+            for key,value in ht_args.items():
+                resp[key] = value
+        logger.debug("resp_headers: %s" % ht_args)
         return resp
 
     def callback(self, response, session):

@@ -32,11 +32,11 @@ ALLOWED_HOSTS = []
 # timezone as the operating system.
 # If running in a Windows environment this must be set to the same as your
 # system time zone.
-TIME_ZONE = 'Europe/Rome'
+TIME_ZONE = 'Europe/Paris'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
-LANGUAGE_CODE = 'it-it'
+LANGUAGE_CODE = 'en-US'
 
 SITE_ID = 1
 
@@ -190,7 +190,7 @@ LOGGING = {
 PORT = 8000
 BASE = "http://localhost:%s/%s/marsu" % (PORT, BASE_ROOT) + "/"
 
-# If BASE is https these has to be specified (.cer)
+# If BASE is https these have to be specified (.cer)
 SERVER_KEY = ''
 SERVER_CERT = ''
 CA_BUNDLE = None
