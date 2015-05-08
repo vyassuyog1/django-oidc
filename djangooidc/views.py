@@ -3,6 +3,8 @@ from urlparse import parse_qs
 
 from django.conf import settings
 from django.contrib.auth import logout as auth_logout
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.views import login, logout as auth_logout_view
 from django.shortcuts import redirect, render_to_response, resolve_url
 from django.http import HttpResponse
 from django import forms
@@ -17,7 +19,7 @@ CLIENTS = OIDCClients(settings)
 
 # Step 1: provider choice (form). Also - Step 2: redirect to OP. (Step 3 is OP business.)
 class DynamicProvider(forms.Form):
-    hint = forms.CharField(required=True, label='login', max_length=250)
+    hint = forms.CharField(required=True, label='OpenID Connect full login', max_length=250)
 
 
 def openid(request, op_name=None):
@@ -27,6 +29,14 @@ def openid(request, op_name=None):
         dyn = settings.ALLOW_DYNAMIC_OP or False
     except:
         dyn = True
+
+    # Internal login?
+    if request.method == 'POST':
+        ilform = AuthenticationForm(request.POST)
+        if ilform["username"]:
+            return login(request)
+    else:
+        ilform = AuthenticationForm()
 
     # Try to find an OP client either from the form or from the op_name URL argument
     if request.method == 'GET' and op_name is not None:
@@ -55,7 +65,7 @@ def openid(request, op_name=None):
     # Otherwise just render the list+form.
     return render_to_response("djangooidc/opchoice.html",
                               {"op_list": [i for i in settings.CLIENTS.keys() if i], 'dynamic': dyn,
-                               'form': form}, context_instance=RequestContext(request))
+                               'form': form, 'ilform': ilform}, context_instance=RequestContext(request))
 
 
 # Step 4: analyze the token returned by the OP
@@ -74,6 +84,9 @@ def authz_cb(request):
 
 
 def logout(request, next_page=None):
+    if not "op" in request.session.keys():
+        return auth_logout_view(request, next_page)
+
     client = CLIENTS[request.session["op"]]
 
     # User is by default NOT redirected to the app - it stays on an OP page after logout.
