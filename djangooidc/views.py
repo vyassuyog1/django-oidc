@@ -26,7 +26,7 @@ def openid(request, op_name=None):
     client = None
     request.session["next"] = request.GET["next"] if "next" in request.GET.keys() else "/"
     try:
-        dyn = settings.ALLOW_DYNAMIC_OP or False
+        dyn = settings.OIDC_ALLOW_DYNAMIC_OP or False
     except:
         dyn = True
 
@@ -36,10 +36,9 @@ def openid(request, op_name=None):
         template_name = 'djangooidc/login.html'
 
     # Internal login?
-    if request.method == 'POST':
+    if request.method == 'POST' and "internal_login" in request.POST:
         ilform = AuthenticationForm(request.POST)
-        if ilform["username"]:
-            return login(request)
+        return login(request)
     else:
         ilform = AuthenticationForm()
 
@@ -69,7 +68,7 @@ def openid(request, op_name=None):
 
     # Otherwise just render the list+form.
     return render_to_response(template_name,
-                              {"op_list": [i for i in settings.CLIENTS.keys() if i], 'dynamic': dyn,
+                              {"op_list": [i for i in settings.OIDC_CLIENTS.keys() if i], 'dynamic': dyn,
                                'form': form, 'ilform': ilform}, context_instance=RequestContext(request))
 
 

@@ -131,7 +131,7 @@ class OIDCClients(object):
         self.client_cls = Client
         self.config = config
 
-        for key, val in config.CLIENTS.items():
+        for key, val in config.OIDC_CLIENTS.items():
             if key == "":
                 continue
             else:

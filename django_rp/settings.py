@@ -111,7 +111,7 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 # 'default': {
 # 'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
 # }
-#}
+# }
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
@@ -123,7 +123,7 @@ LOGIN_URL = 'openid'
 ROOT_URLCONF = 'django_rp.urls'
 
 TEMPLATE_DIRS = (
-    os.path.join(BASE_DIR, "django_rp/templates"),
+    # os.path.join(BASE_DIR, "django_rp/templates"),
 )
 
 INSTALLED_APPS = (
@@ -185,60 +185,63 @@ LOGGING = {
 }
 
 ###############################################################################
-## PyOIDC specific settings
+# PyOIDC specific settings
 
-PORT = 8000
-BASE = "http://localhost:%s/%s/marsu" % (PORT, BASE_ROOT) + "/"
-
-# If BASE is https these have to be specified (.cer)
+# If the site is served  with HTTPS these have to be specified
 SERVER_KEY = ''
 SERVER_CERT = ''
 CA_BUNDLE = None
 VERIFY_SSL = True
 
-# information used when registering the client, this may be the same for all OPs
-ME = {
+# The view for OIDC login uses a default template - it can be overridden here
+# OIDC_LOGIN_TEMPLATE = "djangooidc/login.html"
+
+# You may want to disable client registration. In that case, only the OP inside OIDC_CLIENTS will be available.
+# OIDC_ALLOW_DYNAMIC_OP = False
+
+# Information used when registering the client, this may be the same for all OPs
+# Ignored if auto registration is not used.
+OIDC_ME = {
     "application_type": "web",
     "contacts": ["ops@example.com"],
-    "redirect_uris": ["%sauthz_cb" % BASE],
-    "post_logout_redirect_uris": ["%slogout" % BASE]
+    "redirect_uris": ["http://localhost:8000/openid/callback", ],
+    "post_logout_redirect_uris": ["http://localhost:8000/", ]
 }
 
-BEHAVIOUR = {
+# Default is using the 'code' workflow, which requires direct connectivity from website to the OP.
+OIDC_BEHAVIOUR = {
     "response_type": "code",
     "scope": ["openid", "profile", "email", "address", "phone"],
 }
 
-# The keys in this dictionary are the OPs (OpenID Providers) short user friendly name
-# not the issuer (iss) name.
-
-CLIENTS = {
+# The keys in this dictionary are the OPs (OpenID Providers) short user friendly name not the issuer (iss) name.
+OIDC_CLIENTS = {
     # The ones that support webfinger, OP discovery and client registration
     # This is the default, any client that is not listed here is expected to
     # support dynamic discovery and registration.
     "": {
-        "client_info": ME,
-        "behaviour": BEHAVIOUR
+        "client_info": OIDC_ME,
+        "behaviour": OIDC_BEHAVIOUR
     },
-    "azuread": {
+    "Azure Active Directory": {
         "srv_discovery_url": "https://sts.windows.net/9019caa7-f3ba-4261-8b4f-9162bdbe8cd1/",
-        "behaviour": BEHAVIOUR,
+        "behaviour": OIDC_BEHAVIOUR,
         "client_registration": {
-             "client_id": "0d21f6d8-796f-4879-a2e1-314ddfcfb737",
-             "client_secret": "6hzvhNTsHPvTiUH/GUHVsFDt8b0BajZNox/iFI7iVJ8=",
-             "redirect_uris": ["http://localhost:8000/openid/authz_cb/"],
-             "post_logout_redirect_uris": ["http://localhost:8000/unprotected"],
-         }
+            "client_id": "0d21f6d8-796f-4879-a2e1-314ddfcfb737",
+            "client_secret": "6hzvhNTsHPvTiUH/GUHVsFDt8b0BajZNox/iFI7iVJ8=",
+            "redirect_uris": ["http://localhost:8000/openid/callback/"],
+            "post_logout_redirect_uris": ["http://localhost:8000/unprotected"],
+        }
     },
-    # No webfinger support, but OP information lookup and client registration
+    # # No webfinger support, but OP information lookup and client registration
     # "xenosmilus": {
-    #     "srv_discovery_url": "https://xenosmilus2.umdc.umu.se:8091/",
-    #     "client_info": ME,
-    #     "behaviour": BEHAVIOUR
+    # "srv_discovery_url": "https://xenosmilus2.umdc.umu.se:8091/",
+    # "client_info": ME,
+    # "behaviour": BEHAVIOUR
     # },
     # # Supports OP information lookup but not client registration
     # "op.example.org": {
-    #     "srv_discovery_url": "https://example.org/op/discovery_endpoint",
+    # "srv_discovery_url": "https://example.org/op/discovery_endpoint",
     #     "client_registration": {
     #         "client_id": "abcdefgh",
     #         "client_secret": "123456789",
@@ -284,5 +287,5 @@ CLIENTS = {
     #     }
     # },
 }
-##
+#
 ###############################################################################
