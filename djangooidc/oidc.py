@@ -56,7 +56,7 @@ class Client(oic.Client):
 
         resp = HttpResponseRedirect(url)
         if ht_args:
-            for key,value in ht_args.items():
+            for key, value in ht_args.items():
                 resp[key] = value
         logger.debug("resp_headers: %s" % ht_args)
         return resp
@@ -109,7 +109,7 @@ class Client(oic.Client):
             if isinstance(atresp, ErrorResponse):
                 raise OIDCError("Invalid response %s." % atresp["error"])
 
-        inforesp = self.do_user_info_request(state=authresp["state"], method = "GET")
+        inforesp = self.do_user_info_request(state=authresp["state"], method="GET")
 
         if isinstance(inforesp, ErrorResponse):
             raise OIDCError("Invalid response %s." % inforesp["error"])
