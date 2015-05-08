@@ -69,7 +69,8 @@ def openid(request, op_name=None):
     # Otherwise just render the list+form.
     return render_to_response(template_name,
                               {"op_list": [i for i in settings.OIDC_CLIENTS.keys() if i], 'dynamic': dyn,
-                               'form': form, 'ilform': ilform}, context_instance=RequestContext(request))
+                               'form': form, 'ilform': ilform, "next": request.session["next"]},
+                              context_instance=RequestContext(request))
 
 
 # Step 4: analyze the token returned by the OP
