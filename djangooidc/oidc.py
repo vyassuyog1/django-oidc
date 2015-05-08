@@ -1,4 +1,3 @@
-from oic.utils.http_util import Redirect
 from oic.exception import MissingAttribute
 from oic import oic
 from oic.oauth2 import rndstr, ErrorResponse
