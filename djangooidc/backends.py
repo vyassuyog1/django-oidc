@@ -29,20 +29,25 @@ class OpenIdUserBackend(ModelBackend):
         Returns None if ``create_unknown_user`` is ``False`` and a ``User``
         object with the given username is not found in the database.
         """
-        if not userinfo or not userinfo.has_key('sub'): return
+        if not userinfo or not 'sub' in userinfo.keys():
+            return
         user = None
-
-        username = self.clean_username(userinfo['sub'])
 
         UserModel = get_user_model()
 
+        username = self.clean_username(userinfo['sub'])
+        if 'upn' in userinfo.keys():
+            username = userinfo['upn']
+
         # Some OP may actually choose to withhold some information, so we must test if it is present
         openid_data = {UserModel.USERNAME_FIELD: username}
-        if userinfo.has_key('first_name'):
+        if 'first_name' in userinfo.keys():
             openid_data['first_name'] = userinfo['first_name']
-        if userinfo.has_key('family_name'):
+        if 'family_name' in userinfo.keys():
             openid_data['last_name'] = userinfo['family_name']
-        if userinfo.has_key('email'):
+        if 'given_name' in userinfo.keys():
+            openid_data['last_name'] = userinfo['given_name']
+        if 'email' in userinfo.keys():
             openid_data['email'] = userinfo['email']
 
         # Note that this could be accomplished in one try-except clause, but

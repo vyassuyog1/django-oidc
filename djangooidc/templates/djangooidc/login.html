@@ -16,7 +16,7 @@
     <div class="ooidc-block">
         <div class="ooidc-block-title">Log in with one of the following systems</div>
         {% for op_name in op_list %}
-        <a href="{% url 'openid_with_op_name' op_name=op_name %}">{{ op_name }}</a>
+        <a href="{% url 'openid_with_op_name' op_name=op_name %}">{{ op_name }}</a>&nbsp;
         {% endfor %}
     </div>
     {% endif %}
