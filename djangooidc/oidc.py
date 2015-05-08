@@ -131,7 +131,7 @@ class OIDCClients(object):
         self.client_cls = Client
         self.config = config
 
-        for key, val in config.OIDC_CLIENTS.items():
+        for key, val in config.OIDC_PROVIDERS.items():
             if key == "":
                 continue
             else:
@@ -227,10 +227,9 @@ class OIDCClients(object):
             # Gather OP information
             _pcr = client.provider_config(issuer)
             # register the client
-            _ = client.register(_pcr["registration_endpoint"],
-                                **self.config.CLIENTS[""]["client_info"])
+            _ = client.register(_pcr["registration_endpoint"], **self.config.OIDC_DYNAMIC_CLIENT_REGISTRATION_DATA)
             try:
-                client.behaviour.update(**self.config.CLIENTS[""]["behaviour"])
+                client.behaviour.update(**self.config.OIDC_DEFAULT_BEHAVIOUR)
             except KeyError:
                 pass
 

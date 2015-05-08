@@ -196,12 +196,13 @@ LOGGING = {
 # The view for OIDC login uses a default template - it can be overridden here
 # OIDC_LOGIN_TEMPLATE = "djangooidc/login.html"
 
-# You may want to disable client registration. In that case, only the OP inside OIDC_CLIENTS will be available.
+# You may want to disable client registration. In that case, only the OP inside OIDC_PROVIDERS will be available.
 # OIDC_ALLOW_DYNAMIC_OP = False
 
-# Information used when registering the client, this may be the same for all OPs
-# Ignored if auto registration is not used.
-OIDC_ME = {
+# Information used when dynamically registering a client on an OP.
+# Ignored if auto registration is not used. May also be directly reused in OIDC_PROVIDERS (as this data may be
+# the same for all OPs)
+OIDC_DYNAMIC_CLIENT_REGISTRATION_DATA = {
     "application_type": "web",
     "contacts": ["ops@example.com"],
     "redirect_uris": ["http://localhost:8000/openid/callback", ],
@@ -209,23 +210,17 @@ OIDC_ME = {
 }
 
 # Default is using the 'code' workflow, which requires direct connectivity from website to the OP.
-OIDC_BEHAVIOUR = {
+OIDC_DEFAULT_BEHAVIOUR = {
     "response_type": "code",
     "scope": ["openid", "profile", "email", "address", "phone"],
 }
 
 # The keys in this dictionary are the OPs (OpenID Providers) short user friendly name not the issuer (iss) name.
-OIDC_CLIENTS = {
-    # The ones that support webfinger, OP discovery and client registration
-    # This is the default, any client that is not listed here is expected to
-    # support dynamic discovery and registration.
-    "": {
-        "client_info": OIDC_ME,
-        "behaviour": OIDC_BEHAVIOUR
-    },
+OIDC_PROVIDERS = {
+    # Test OP - webfinger supported on non-standard URL, no client self registration.
     "Azure Active Directory": {
         "srv_discovery_url": "https://sts.windows.net/9019caa7-f3ba-4261-8b4f-9162bdbe8cd1/",
-        "behaviour": OIDC_BEHAVIOUR,
+        "behaviour": OIDC_DEFAULT_BEHAVIOUR,
         "client_registration": {
             "client_id": "0d21f6d8-796f-4879-a2e1-314ddfcfb737",
             "client_secret": "6hzvhNTsHPvTiUH/GUHVsFDt8b0BajZNox/iFI7iVJ8=",
@@ -242,9 +237,9 @@ OIDC_CLIENTS = {
     # # Supports OP information lookup but not client registration
     # "op.example.org": {
     # "srv_discovery_url": "https://example.org/op/discovery_endpoint",
-    #     "client_registration": {
-    #         "client_id": "abcdefgh",
-    #         "client_secret": "123456789",
+    # "client_registration": {
+    # "client_id": "abcdefgh",
+    # "client_secret": "123456789",
     #         "redirect_uris": ["https://rp.example.com/authn_cb"],
     #     }
     # },

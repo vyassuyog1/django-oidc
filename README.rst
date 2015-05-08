@@ -19,28 +19,21 @@ Install djangooidc::
     pip install git+https://github.com/marcanpilami/django-oidc.git
     
 
-Then to use it in a project, add this to your settings.py:
+Then to use it in a Django project, add this to your urls.py::
+
+    url(r'openid/', include('djangooidc.urls')),
+
+
+Then add the following items to your settings.py:
 
 * add `'djangooidc.backends.OpenIdConnectBackend'` to AUTHENTICATION_BACKENDS
   (note: the default `'django.contrib.auth.backends.ModelBackend'` must be present **before** the oidc backend)
 * set LOGIN_URL = 'openid'
 * add the specific OIDC parameters (change the absolute URLs to yours)::
 
-    ##################################
-    # OIDC
-
-    # If we should check certificates (True by default)
-    # OIDC_VERIFY_SSL = False
-
-    # The view for OIDC login uses a default template which can be overridden here
-    # OIDC_LOGIN_TEMPLATE = "fed_login.html"
-
-    # You may want to disable client registration. In that case, only the OP inside OIDC_CLIENTS will be available.
-    # OIDC_ALLOW_DYNAMIC_OP = False
-
     # Information used when registering the client, this may be the same for all OPs
     # Ignored if auto registration is not used.
-    OIDC_ME = {
+    OIDC_DYNAMIC_CLIENT_REGISTRATION_DATA = {
         "application_type": "web",
         "contacts": ["ops@example.com"],
         "redirect_uris": ["http://localhost:8000/openid/callback", ],
@@ -48,39 +41,29 @@ Then to use it in a project, add this to your settings.py:
     }
 
     # Default is using the 'code' workflow, which requires direct connectivity from website to the OP.
-    OIDC_BEHAVIOUR = {
+    OIDC_DEFAULT_BEHAVIOUR = {
         "response_type": "code",
         "scope": ["openid", "profile", "email", "address", "phone"],
     }
 
-    # The keys in this dictionary are the OPs (OpenID Providers) short user friendly name not the issuer (iss) name.
-    OIDC_CLIENTS = {
-        # The ones that support webfinger, OP discovery and client registration
-        # This is the default, any client that is not listed here is expected to
-        # support dynamic discovery and registration.
-        "": {
-            "client_info": OIDC_ME,
-            "behaviour": OIDC_BEHAVIOUR
-        },
-    }
-
+The configuration above is enough to use OIDC providers (OP) that support discovery and self client registration.
 In addition, you may want to use a specific OpenID Connect provider that is not auto-discoverable. This is done
-by adding items to the OIDC_CLIENTS dictionary. For example, an Azure AD OP would be::
+by adding items to the OIDC_CLIENTS dictionary. See full documentation for parameter names.
 
-    "Azure Active Directory": {
-        "srv_discovery_url": "https://sts.windows.net/aaaaaaaa-aaaa-1111-aaaa-xxxxxxxxxxxxx/",
-        "behaviour": OIDC_BEHAVIOUR,
-        "client_registration": {
-            "client_id": "your_client_id",
-            "client_secret": "your_client_secret",
-            "redirect_uris": ["http://localhost:8000/openid/callback/"],
-            "post_logout_redirect_uris": ["http://localhost:8000/"],
+For example, an Azure AD OP would be::
+
+    OIDC_PROVIDERS = {
+        "Azure Active Directory": {
+            "srv_discovery_url": "https://sts.windows.net/aaaaaaaa-aaaa-1111-aaaa-xxxxxxxxxxxxx/",
+            "behaviour": OIDC_DEFAULT_BEHAVIOUR,
+            "client_registration": {
+                "client_id": "your_client_id",
+                "client_secret": "your_client_secret",
+                "redirect_uris": ["http://localhost:8000/openid/callback/"],
+                "post_logout_redirect_uris": ["http://localhost:8000/"],
+            }
         }
     }
-
-Then add this to urls.py::
-
-    url(r'openid/', include('djangooidc.urls')),
 
 
 You may now test the authentication by going to (on the development server) http://localhost:8000/openid/login or to any
@@ -90,5 +73,6 @@ of your views that requires authentication.
 Features
 --------
 
-* Simple ready to use Django authentication provider
-* No models stored in database - just some configuration in settings.py
+* Ready to use Django authentication provider
+* No models stored in database - just some configuration in settings.py to keep it simple
+* Fully integrated with Django internal accounts and permission system
