@@ -30,6 +30,11 @@ def openid(request, op_name=None):
     except:
         dyn = True
 
+    try:
+        template_name = settings.OIDC_LOGIN_TEMPLATE
+    except AttributeError:
+        template_name = 'djangooidc/login.html'
+
     # Internal login?
     if request.method == 'POST':
         ilform = AuthenticationForm(request.POST)
@@ -63,7 +68,7 @@ def openid(request, op_name=None):
             return render_to_response("djangooidc/error.html", {"error": e})
 
     # Otherwise just render the list+form.
-    return render_to_response("djangooidc/opchoice.html",
+    return render_to_response(template_name,
                               {"op_list": [i for i in settings.CLIENTS.keys() if i], 'dynamic': dyn,
                                'form': form, 'ilform': ilform}, context_instance=RequestContext(request))
 
