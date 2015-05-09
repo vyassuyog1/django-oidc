@@ -224,8 +224,8 @@ OIDC_PROVIDERS = {
         "client_registration": {
             "client_id": "0d21f6d8-796f-4879-a2e1-314ddfcfb737",
             "client_secret": "6hzvhNTsHPvTiUH/GUHVsFDt8b0BajZNox/iFI7iVJ8=",
-            "redirect_uris": ["http://localhost:8000/openid/callback/"],
-            "post_logout_redirect_uris": ["http://localhost:8000/unprotected"],
+            "redirect_uris": ["http://localhost:8000/openid/callback/login/"],
+            "post_logout_redirect_uris": ["http://localhost:8000/openid/callback/logout/"],
         }
     },
     # # No webfinger support, but OP information lookup and client registration

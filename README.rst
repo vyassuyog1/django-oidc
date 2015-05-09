@@ -26,8 +26,8 @@ Then to use it in a Django project, add this to your urls.py::
 
 Then add the following items to your settings.py:
 
-* add `'djangooidc.backends.OpenIdConnectBackend'` to AUTHENTICATION_BACKENDS
-  (note: the default `'django.contrib.auth.backends.ModelBackend'` must be present **before** the oidc backend)
+* add `'djangooidc.backends.OpenIdConnectBackend'` to AUTHENTICATION_BACKENDS **after** the default
+  `'django.contrib.auth.backends.ModelBackend'`
 * set LOGIN_URL = 'openid'
 * add the specific OIDC parameters (change the absolute URLs to yours)::
 
@@ -36,8 +36,8 @@ Then add the following items to your settings.py:
     OIDC_DYNAMIC_CLIENT_REGISTRATION_DATA = {
         "application_type": "web",
         "contacts": ["ops@example.com"],
-        "redirect_uris": ["http://localhost:8000/openid/callback", ],
-        "post_logout_redirect_uris": ["http://localhost:8000/", ]
+        "redirect_uris": ["http://localhost:8000/openid/callback/login/", ],
+        "post_logout_redirect_uris": ["http://localhost:8000/openid/callback/logout/", ]
     }
 
     # Default is using the 'code' workflow, which requires direct connectivity from website to the OP.
@@ -48,7 +48,7 @@ Then add the following items to your settings.py:
 
 The configuration above is enough to use OIDC providers (OP) that support discovery and self client registration.
 In addition, you may want to use a specific OpenID Connect provider that is not auto-discoverable. This is done
-by adding items to the OIDC_CLIENTS dictionary. See full documentation for parameter names.
+by adding items to the OIDC_PROVIDERS dictionary. See full documentation for parameter names.
 
 For example, an Azure AD OP would be::
 
@@ -59,8 +59,8 @@ For example, an Azure AD OP would be::
             "client_registration": {
                 "client_id": "your_client_id",
                 "client_secret": "your_client_secret",
-                "redirect_uris": ["http://localhost:8000/openid/callback/"],
-                "post_logout_redirect_uris": ["http://localhost:8000/"],
+                "redirect_uris": ["http://localhost:8000/openid/callback/login/"],
+                "post_logout_redirect_uris": ["http://localhost:8000/openid/callback/logout/"],
             }
         }
     }
@@ -73,6 +73,9 @@ of your views that requires authentication.
 Features
 --------
 
-* Ready to use Django authentication provider
+* Ready to use Django authentication backend
 * No models stored in database - just some configuration in settings.py to keep it simple
-* Fully integrated with Django internal accounts and permission system
+* Fully integrated with Django's internal accounts and permission system
+* Support for all OIDC workflows: Authorization Code flow, Implicit flow, Hybrid flow. Don't worry if you don't know
+  what these are - the package comes with great defaults.
+* Includes logout at the provider handling
