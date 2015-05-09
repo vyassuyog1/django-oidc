@@ -9,6 +9,7 @@ from django.shortcuts import redirect, render_to_response, resolve_url
 from django.http import HttpResponse
 from django import forms
 from django.template import RequestContext
+from oic.oic.message import IdToken
 
 from djangooidc.oidc import OIDCClients, OIDCError
 
@@ -131,8 +132,11 @@ def logout(request, next_page=None):
 
     # Redirect client to the OP logout page
     try:
+        request_args = None
+        if 'id_token' in request.session.keys():
+            request_args = {'id_token': IdToken(**request.session['id_token'])}
         res = client.do_end_session_request(state=request.session["state"],
-                                            extra_args=extra_args)
+                                            extra_args=extra_args, request_args=request_args)
         resp = HttpResponse(content_type=res.headers["content-type"], status=res.status_code, content=res._content)
         for key, val in res.headers.items():
             resp[key] = val

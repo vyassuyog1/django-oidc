@@ -92,8 +92,7 @@ class Client(oic.Client):
             try:
                 args = {
                     "code": authresp["code"],
-                    "redirect_uri": self.registration_response[
-                        "redirect_uris"][0],
+                    "redirect_uri": self.registration_response["redirect_uris"][0],
                     "client_id": self.client_id,
                     "client_secret": self.client_secret
                 }
@@ -107,6 +106,12 @@ class Client(oic.Client):
 
             if isinstance(atresp, ErrorResponse):
                 raise OIDCError("Invalid response %s." % atresp["error"])
+            session['id_token'] = atresp['id_token']._dict
+            session['access_token'] = atresp['access_token']
+            try:
+                session['refresh_token'] = atresp['refresh_token']
+            except:
+                pass
 
         inforesp = self.do_user_info_request(state=authresp["state"], method="GET")
 
