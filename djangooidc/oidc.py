@@ -1,3 +1,4 @@
+from django.conf import settings
 from oic.exception import MissingAttribute
 from oic import oic
 from oic.oauth2 import rndstr, ErrorResponse
@@ -12,6 +13,8 @@ import logging
 from django.http import HttpResponseRedirect
 
 logger = logging.getLogger(__name__)
+
+default_ssl_check = getattr(settings, 'OIDC_VERIFY_SSL', True)
 
 
 class OIDCError(Exception):
@@ -164,7 +167,7 @@ class OIDCClients(object):
                 _key_set.discard(param)
 
         try:
-            verify_ssl = self.config.OIDC_VERIFY_SSL
+            verify_ssl = default_ssl_check
         except:
             verify_ssl = True
 
@@ -223,7 +226,7 @@ class OIDCClients(object):
 
     def dynamic_client(self, userid):
         client = self.client_cls(client_authn_method=CLIENT_AUTHN_METHOD,
-                                 verify_ssl=self.config.VERIFY_SSL)
+                                 verify_ssl=default_ssl_check)
 
         issuer = client.wf.discovery_query(userid)
         if issuer in self.client:
