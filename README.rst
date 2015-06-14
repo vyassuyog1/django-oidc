@@ -1,11 +1,9 @@
 Django OpenID Connect (OIDC) authentication provider
 ====================================================
 
-**WARNING**: work in progress.
-
 This module makes it easy to integrate OpenID Connect as an authentication source in a Django project.
 
-Behind the scenes, it uses Roland Hedberg's pyoidc library.
+Behind the scenes, it uses Roland Hedberg's great pyoidc library.
 
 Quickstart
 ----------
@@ -40,7 +38,7 @@ Then add the following items to your settings.py:
         "post_logout_redirect_uris": ["http://localhost:8000/openid/callback/logout/", ]
     }
 
-    # Default is using the 'code' workflow, which requires direct connectivity from website to the OP.
+    # Default is using the 'code' workflow, which requires direct connectivity from your website to the OP.
     OIDC_DEFAULT_BEHAVIOUR = {
         "response_type": "code",
         "scope": ["openid", "profile", "email", "address", "phone"],
@@ -78,4 +76,4 @@ Features
 * Fully integrated with Django's internal accounts and permission system
 * Support for all OIDC workflows: Authorization Code flow, Implicit flow, Hybrid flow. Don't worry if you don't know
   what these are - the package comes with great defaults.
-* Includes logout at the provider handling
+* Includes logout at the provider level
