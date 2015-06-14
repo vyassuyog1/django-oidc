@@ -27,7 +27,7 @@ class OpenIdConnectBackend(ModelBackend):
             username = kwargs['upn']
 
         # Some OP may actually choose to withhold some information, so we must test if it is present
-        openid_data = {}
+        openid_data = {'last_login': datetime.datetime.now()}
         if 'first_name' in kwargs.keys():
             openid_data['first_name'] = kwargs['first_name']
         if 'given_name' in kwargs.keys():
@@ -45,7 +45,7 @@ class OpenIdConnectBackend(ModelBackend):
         # instead we use get_or_create when creating unknown users since it has
         # built-in safeguards for multiple threads.
         if getattr(settings, 'OIDC_CREATE_UNKNOWN_USER', True):
-            args = {UserModel.USERNAME_FIELD: username, 'defaults': openid_data, 'last_login': datetime.datetime.now()}
+            args = {UserModel.USERNAME_FIELD: username, 'defaults': openid_data, }
             user, created = UserModel.objects.update_or_create(**args)
             if created:
                 user = self.configure_user(user)
