@@ -1,6 +1,7 @@
 # coding: utf-8
 
 from __future__ import unicode_literals
+import datetime
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
@@ -44,7 +45,7 @@ class OpenIdConnectBackend(ModelBackend):
         # instead we use get_or_create when creating unknown users since it has
         # built-in safeguards for multiple threads.
         if getattr(settings, 'OIDC_CREATE_UNKNOWN_USER', True):
-            args = {UserModel.USERNAME_FIELD: username, 'defaults': openid_data}
+            args = {UserModel.USERNAME_FIELD: username, 'defaults': openid_data, 'last_login': datetime.datetime.now()}
             user, created = UserModel.objects.update_or_create(**args)
             if created:
                 user = self.configure_user(user)
