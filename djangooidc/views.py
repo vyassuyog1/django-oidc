@@ -139,7 +139,8 @@ def logout(request, next_page=None):
             request_args = {'id_token': IdToken(**request.session['id_token'])}
         res = client.do_end_session_request(state=request.session["state"],
                                             extra_args=extra_args, request_args=request_args)
-        resp = HttpResponse(content_type=res.headers["content-type"], status=res.status_code, content=res._content)
+        content_type = res.headers.get("content-type", "text/html") # In case the logout response doesn't set content-type (Seen with Keycloak)
+        resp = HttpResponse(content_type=content_type, status=res.status_code, content=res._content)
         for key, val in res.headers.items():
             resp[key] = val
         return resp
