@@ -138,9 +138,7 @@ def logout(request, next_page=None):
         # DP HACK: Needed to get logout to actually logout from the OIDC Provider
         # According to ODIC session spec (http://openid.net/specs/openid-connect-session-1_0.html#RPLogout)
         # the user should be directed to the OIDC provider to logout after being
-        # logged out here. The commented code makes a logout call to the OIDC Provider
-        # on behalf of the user. The request it makes doesn't conform to the spec above
-        # and fails to actually log the user out of the provider.
+        # logged out here.
 
         request_args = {
             'id_token_hint': request.session['access_token'],
@@ -154,6 +152,9 @@ def logout(request, next_page=None):
         url += "?" + urlencode(request_args)
         return HttpResponseRedirect(url)
 
+        # Looks like they are implementing back channel logout, without checking for
+        # support?
+        # http://openid.net/specs/openid-connect-backchannel-1_0.html#Backchannel
         """
         request_args = None
         if 'id_token' in request.session.keys():
