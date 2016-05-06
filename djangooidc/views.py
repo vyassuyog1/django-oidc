@@ -2,13 +2,14 @@
 
 import logging
 from urllib.parse import parse_qs
+from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib.auth import logout as auth_logout, authenticate, login
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.views import login as auth_login_view, logout as auth_logout_view
 from django.shortcuts import redirect, render_to_response, resolve_url
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django import forms
 from django.template import RequestContext
 from oic.oic.message import IdToken
@@ -134,6 +135,26 @@ def logout(request, next_page=None):
 
     # Redirect client to the OP logout page
     try:
+        # DP HACK: Needed to get logout to actually logout from the OIDC Provider
+        # According to ODIC session spec (http://openid.net/specs/openid-connect-session-1_0.html#RPLogout)
+        # the user should be directed to the OIDC provider to logout after being
+        # logged out here. The commented code makes a logout call to the OIDC Provider
+        # on behalf of the user. The request it makes doesn't conform to the spec above
+        # and fails to actually log the user out of the provider.
+
+        request_args = {
+            'id_token_hint': request.session['access_token'],
+            'state': request.session['state'],
+        }
+        request_args.update(extra_args) # should include the post_logout_redirect_uri
+
+        # id_token iss is the token issuer, the url of the issuing server
+        # the full url works for the BOSS OIDC Provider, not tested on any other provider
+        url = request.session['id_token']['iss'] + "/protocol/openid-connect/logout"
+        url += "?" + urlencode(request_args)
+        return HttpResponseRedirect(url)
+
+        """
         request_args = None
         if 'id_token' in request.session.keys():
             request_args = {'id_token': IdToken(**request.session['id_token'])}
@@ -144,6 +165,7 @@ def logout(request, next_page=None):
         for key, val in res.headers.items():
             resp[key] = val
         return resp
+        """
     finally:
         # Always remove Django session stuff - even if not logged out from OP. Don't wait for the callback as it may never come.
         auth_logout(request)
