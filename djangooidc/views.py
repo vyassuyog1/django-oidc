@@ -93,6 +93,7 @@ def authz_cb(request):
         else:
             raise Exception('this login is not valid in this application')
     except OIDCError as e:
+        logging.getLogger('djangooidc.views.authz_cb').exception('Problem logging user in')
         return render_to_response("djangooidc/error.html", {"error": e, "callback": query})
 
 
