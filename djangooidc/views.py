@@ -1,24 +1,22 @@
 # coding: utf-8
 
 import logging
-from urllib.parse import parse_qs
-from urllib.parse import urlencode
-
+from django import forms
 from django.conf import settings
-from django.contrib.auth import logout as auth_logout, authenticate, login
+from django.contrib.auth import authenticate, login, logout as auth_logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.views import login as auth_login_view, logout as auth_logout_view
+from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render, resolve_url
-from django.http import HttpResponse, HttpResponseRedirect
-from django import forms
-from django.template import RequestContext
-from oic.oic.message import IdToken
+from urllib.parse import parse_qs, urlencode
 
 from djangooidc.oidc import OIDCClients, OIDCError
 
 logger = logging.getLogger(__name__)
 
 CLIENTS = OIDCClients(settings)
+
+ERROR_TEMPLATE = "djangooidc/error.html"
 
 
 # Step 1: provider choice (form). Also - Step 2: redirect to OP. (Step 3 is OP business.)
@@ -59,7 +57,7 @@ def openid(request, op_name=None):
                 request.session["op"] = client.provider_info["issuer"]
             except Exception as e:
                 logger.exception("could not create OOID client")
-                return render(request, "djangooidc/error.html", {"error": e})
+                return render(request, ERROR_TEMPLATE, context={"error": e})
     else:
         form = DynamicProvider()
 
@@ -68,12 +66,12 @@ def openid(request, op_name=None):
         try:
             return client.create_authn_request(request.session)
         except Exception as e:
-            return render(request, "djangooidc/error.html", {"error": e})
+            return render(request, ERROR_TEMPLATE, context={"error": e})
 
     # Otherwise just render the list+form.
     return render(request, template_name,
-                              {"op_list": [i for i in settings.OIDC_PROVIDERS.keys() if i], 'dynamic': dyn,
-                               'form': form, 'ilform': ilform, "next": request.session["next"]})
+                  context={"op_list": [i for i in settings.OIDC_PROVIDERS.keys() if i], 'dynamic': dyn,
+                           'form': form, 'ilform': ilform, "next": request.session["next"]}, )
 
 
 # Step 4: analyze the token returned by the OP
@@ -93,7 +91,7 @@ def authz_cb(request):
             raise Exception('this login is not valid in this application')
     except OIDCError as e:
         logging.getLogger('djangooidc.views.authz_cb').exception('Problem logging user in')
-        return render(request, "djangooidc/error.html", {"error": e, "callback": query})
+        return render(request, ERROR_TEMPLATE, context={"error": e, "callback": query})
 
 
 def logout(request, next_page=None):
@@ -144,7 +142,7 @@ def logout(request, next_page=None):
             'id_token_hint': request.session['access_token'],
             'state': request.session['state'],
         }
-        request_args.update(extra_args) # should include the post_logout_redirect_uri
+        request_args.update(extra_args)  # should include the post_logout_redirect_uri
 
         # id_token iss is the token issuer, the url of the issuing server
         # the full url works for the BOSS OIDC Provider, not tested on any other provider
@@ -158,7 +156,7 @@ def logout(request, next_page=None):
         """
         request_args = None
         if 'id_token' in request.session.keys():
-            request_args = {'id_token': IdToken(**request.session['id_token'])}
+            request_args = {'id_token': oic.oic.message.IdToken(**request.session['id_token'])}
         res = client.do_end_session_request(state=request.session["state"],
                                             extra_args=extra_args, request_args=request_args)
         content_type = res.headers.get("content-type", "text/html") # In case the logout response doesn't set content-type (Seen with Keycloak)
