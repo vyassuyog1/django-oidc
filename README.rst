@@ -12,9 +12,9 @@ Quickstart
 
 Install djangooidc::
 
-    # Latest code - unstable!
+    # Latest code
     pip install git+https://github.com/jhuapl-boss/django-oidc.git
-    
+
 
 Then to use it in a Django project, add this to your urls.py::
 
