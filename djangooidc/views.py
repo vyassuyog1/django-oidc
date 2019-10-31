@@ -5,7 +5,7 @@ from django import forms
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout as auth_logout
 from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth.views import login as auth_login_view, logout as auth_logout_view
+from django.contrib.auth import login as auth_login_view, logout as auth_logout_view
 from django.http import HttpResponseRedirect
 from django.shortcuts import redirect, render, resolve_url
 from urllib.parse import parse_qs, urlencode
