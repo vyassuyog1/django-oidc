@@ -4,7 +4,7 @@ from django.conf import settings
 from oic.exception import MissingAttribute
 from oic import oic, rndstr
 from oic.oauth2 import ErrorResponse
-from oic.oic import ProviderConfigurationResponse, AuthorizationResponse
+from oic.oic.message import ProviderConfigurationResponse, AuthorizationResponse
 from oic.oic import RegistrationResponse
 from oic.oic import AuthorizationRequest
 from oic.utils.authn.client import CLIENT_AUTHN_METHOD
